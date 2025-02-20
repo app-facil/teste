@@ -1,24 +1,32 @@
-name: Docker SSH with Ngrok
+name: Start SSH and Web Server with Ngrok
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: push
 
 jobs:
-  build-and-run:
+  run-server:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout código
+        uses: actions/checkout@v3
 
-    - name: Build Docker image
-      run: docker build -t ubuntu-ssh-ngrok .
+      - name: Instalar Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
 
-    - name: Run Docker container
-      run: |
-        docker run -d --name ssh_container ubuntu-ssh-ngrok
-        sleep 10  # Espera o Ngrok iniciar
-        docker logs ssh_container 2>&1 | grep "tcp://"  # Captura a URL do Ngrok
+      - name: Construir e rodar o container
+        run: |
+          docker build -t my-ssh-ngrok .
+          docker run -d --name ssh-server -p 22:22 -p 80:80 my-ssh-ngrok
+
+      - name: Baixar e iniciar o Ngrok
+        run: |
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update && sudo apt install ngrok
+          ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          ngrok http 80 > /dev/null &
+          ngrok tcp 22 > /dev/null &
+
+      - name: Manter execução ativa
+        run: sleep infinity
