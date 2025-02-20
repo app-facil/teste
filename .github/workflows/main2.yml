@@ -1,0 +1,45 @@
+name: Deploy Web SSH with Ngrok
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker is running
+        run: docker ps
+
+      - name: Build and Run SSH + Web SSH Docker Container
+        run: |
+          docker build -t minha-web-vps .
+          docker run -d --name minha-web-vps -p 22:22 -p 3000:3000 minha-web-vps
+          sleep 5  # Aguarda o SSH e o Wetty iniciarem
+
+      - name: Install jq (for JSON processing)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Install Ngrok
+        run: |
+          if ! command -v ngrok &> /dev/null; then
+            curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+            echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+            sudo apt update && sudo apt install -y ngrok
+          fi
+
+      - name: Authenticate Ngrok
+        run: ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      - name: Start Ngrok Tunnel for Web SSH (Port 3000)
+        run: ngrok http 3000 > /dev/null &
+
+      - name: Get Ngrok URL
+        run: |
+          sleep 5
+          curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+
+      - name: Keep the Job Alive
+        run: tail -f /dev/null
