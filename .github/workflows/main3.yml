@@ -43,7 +43,9 @@ jobs:
         run: ngrok start --all --config ~/.ngrok2/ngrok.yml &
 
       - name: Exibir URLs do Ngrok
-        run: sleep 5 && curl http://localhost:4040/api/tunnels
+        run: |
+          sleep 5
+          curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | "\(.name): \(.public_url)"'
 
       - name: Manter execução ativa
         run: sleep infinity
