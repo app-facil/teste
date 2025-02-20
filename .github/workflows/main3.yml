@@ -19,14 +19,29 @@ jobs:
           docker build -t my-ssh-ngrok .
           docker run -d --name ssh-server -p 22:22 -p 80:80 my-ssh-ngrok
 
-      - name: Baixar e iniciar o Ngrok
+      - name: Instalar e configurar o Ngrok
         run: |
           curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
           echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
           sudo apt update && sudo apt install ngrok
-          ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-          ngrok http 80 > /dev/null &
-          ngrok tcp 22 > /dev/null &
+
+      - name: Criar configuração do Ngrok
+        run: |
+          mkdir -p ~/.ngrok2
+          cat <<EOF > ~/.ngrok2/ngrok.yml
+          authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
+          version: "2"
+          tunnels:
+            ssh:
+              proto: tcp
+              addr: 22
+            web:
+              proto: http
+              addr: 80
+          EOF
+
+      - name: Iniciar Ngrok
+        run: ngrok start --all &
 
       - name: Manter execução ativa
         run: sleep infinity
