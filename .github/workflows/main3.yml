@@ -12,12 +12,12 @@ jobs:
       - name: Instalar Docker corretamente
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io jq
 
       - name: Construir e rodar o container
         run: |
           docker build -t my-ssh-ngrok .
-          docker run -d --name ssh-server -p 22:22 -p 80:80 my-ssh-ngrok
+          docker run -d --name ssh-server -p 22:22 -p 80:80 -p 8080:8080 my-ssh-ngrok
 
       - name: Instalar e configurar o Ngrok
         run: |
@@ -31,12 +31,12 @@ jobs:
           cat <<EOF > ~/.ngrok2/ngrok.yml
           authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
           tunnels:
-            ssh:
-              proto: tcp
-              addr: 22
             web:
               proto: http
               addr: 80
+            terminal:
+              proto: http
+              addr: 8080
           EOF
 
       - name: Iniciar Ngrok
