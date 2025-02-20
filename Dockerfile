@@ -11,19 +11,15 @@ RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# Instalar o Ngrok
-RUN wget -O /usr/local/bin/ngrok https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64 && \
-    chmod +x /usr/local/bin/ngrok
+# Instalar Ngrok
+RUN wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64.zip && \
+    unzip ngrok-stable-linux-amd64.zip && mv ngrok /usr/local/bin/
 
-# Criar um arquivo HTML simples para teste no Apache
+# Criar um arquivo de entrada HTML
 RUN echo "<h1>Servidor Web via Ngrok</h1>" > /var/www/html/index.html
 
-# Expor portas SSH e HTTP
+# Expor portas para SSH e HTTP
 EXPOSE 22 80
 
-# Comando para iniciar os serviços e rodar o Ngrok
-CMD service ssh start && \
-    service apache2 start && \
-    ngrok http 80 --log=stdout & \
-    ngrok tcp 22 --log=stdout & \
-    tail -f /dev/null
+# Script de inicialização para manter o container ativo
+CMD service ssh start && service apache2 start && tail -f /dev/null
