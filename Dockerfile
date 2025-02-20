@@ -2,7 +2,7 @@
 FROM ubuntu:latest
 
 # Instalar pacotes necessários
-RUN apt update && apt install -y openssh-server wget && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y openssh-server wget curl && rm -rf /var/lib/apt/lists/*
 
 # Criar diretórios e configurar o SSH
 RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
@@ -15,8 +15,11 @@ RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/
 RUN wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64.zip && \
     unzip ngrok-stable-linux-amd64.zip && mv ngrok /usr/local/bin/
 
-# Expor a porta SSH
-EXPOSE 22
+# Instalar o Apache para acessar pelo navegador
+RUN apt install -y apache2 && echo "<h1>Bem-vindo ao Servidor</h1>" > /var/www/html/index.html
 
-# Comando para iniciar o SSH e o Ngrok
-CMD service ssh start && ngrok tcp 22
+# Expor portas SSH e HTTP
+EXPOSE 22 80
+
+# Comando para iniciar os serviços e manter o container ativo
+CMD service ssh start && service apache2 start && while true; do sleep 30; done
