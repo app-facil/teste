@@ -2,7 +2,7 @@
 FROM ubuntu:latest
 
 # Instalar pacotes necessários
-RUN apt update && apt install -y openssh-server wget curl && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y openssh-server wget curl unzip && rm -rf /var/lib/apt/lists/*
 
 # Criar diretórios e configurar o SSH
 RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
