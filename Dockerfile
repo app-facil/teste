@@ -1,11 +1,16 @@
 FROM ubuntu:latest
 
 # Atualizar e instalar pacotes necessários
-RUN apt update && apt install -y openssh-server nodejs npm curl && \
+RUN apt update && \
+    apt install -y openssh-server curl && \
     mkdir /var/run/sshd && \
     echo 'root:1234' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Instalar Node.js e npm corretamente
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt install -y nodejs && \
     npm install -g wetty
 
 # Expor portas do SSH e do Wetty
