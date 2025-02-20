@@ -1,25 +1,27 @@
-# Usar a imagem base do Ubuntu
+# Usa a imagem oficial do Ubuntu como base
 FROM ubuntu:latest
 
-# Instalar pacotes necessários
-RUN apt update && apt install -y openssh-server wget curl unzip && rm -rf /var/lib/apt/lists/*
+# Atualiza o índice de pacotes e instala o SSH server e wget
+RUN apt-get update && apt-get install -y openssh-server wget
 
-# Criar diretórios e configurar o SSH
-RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
-
-# Permitir login root via SSH
+# Configura o SSH
+RUN mkdir /var/run/sshd
+RUN echo 'root:password' | chpasswd
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# Instalar o Ngrok
-RUN wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64.zip && \
-    unzip ngrok-stable-linux-amd64.zip && mv ngrok /usr/local/bin/
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
-# Instalar o Apache para acessar pelo navegador
-RUN apt install -y apache2 && echo "<h1>Bem-vindo ao Servidor</h1>" > /var/www/html/index.html
+ENV NOTVISIBLE "in users profile"
+RUN echo "export VISIBLE=now" >> /etc/profile
 
-# Expor portas SSH e HTTP
-EXPOSE 22 80
+# Instala o Ngrok
+RUN wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -O /tmp/ngrok.zip
+RUN unzip /tmp/ngrok.zip -d /usr/local/bin
+RUN rm /tmp/ngrok.zip
 
-# Comando para iniciar os serviços e manter o container ativo
-CMD service ssh start && service apache2 start && while true; do sleep 30; done
+# Expõe a porta 22 para SSH
+EXPOSE 22
+
+# Comando para rodar o SSH server e Ngrok
+CMD service ssh start && ngrok tcp 22 --log=stdout
