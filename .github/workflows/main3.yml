@@ -30,7 +30,6 @@ jobs:
           mkdir -p ~/.ngrok2
           cat <<EOF > ~/.ngrok2/ngrok.yml
           authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
-          version: "2"
           tunnels:
             ssh:
               proto: tcp
@@ -41,7 +40,10 @@ jobs:
           EOF
 
       - name: Iniciar Ngrok
-        run: ngrok start --all &
+        run: ngrok start --all --config ~/.ngrok2/ngrok.yml &
+
+      - name: Exibir URLs do Ngrok
+        run: sleep 5 && curl http://localhost:4040/api/tunnels
 
       - name: Manter execução ativa
         run: sleep infinity
