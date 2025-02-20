@@ -1,16 +1,15 @@
 FROM ubuntu:latest
 
-# Instalar OpenSSH Server e Node.js (para rodar o Wetty)
-RUN apt update && apt install -y openssh-server curl && \
+# Atualizar e instalar pacotes necessários
+RUN apt update && apt install -y openssh-server nodejs npm curl && \
     mkdir /var/run/sshd && \
-    echo 'root:s3nh@forte' | chpasswd && \
+    echo 'root:1234' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-    apt install -y nodejs npm && \
     npm install -g wetty
 
-# Expor portas: 22 (SSH) e 3000 (Web SSH)
+# Expor portas do SSH e do Wetty
 EXPOSE 22 3000
 
-# Iniciar OpenSSH e Wetty
+# Iniciar SSH e Wetty ao rodar o container
 CMD service ssh start && wetty -p 3000 --ssh-host localhost --ssh-user root
