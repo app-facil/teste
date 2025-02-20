@@ -1,20 +1,22 @@
+# Usar a imagem base do Ubuntu
 FROM ubuntu:latest
 
-# Atualizar repositórios e instalar pacotes necessários
-RUN apt update && apt install -y openssh-server curl && \
-    mkdir /var/run/sshd && \
-    echo 'root:1234' | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+# Instalar pacotes necessários
+RUN apt update && apt install -y openssh-server wget && rm -rf /var/lib/apt/lists/*
 
-# Instalar Node.js e npm de forma alternativa
-RUN apt install -y nodejs npm
+# Criar diretórios e configurar o SSH
+RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
 
-# Instalar o Wetty corretamente
-RUN npm cache clean --force && npm install -g wetty
+# Permitir login root via SSH
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# Expor portas do SSH e do Wetty
-EXPOSE 22 3000
+# Instalar o Ngrok
+RUN wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64.zip && \
+    unzip ngrok-stable-linux-amd64.zip && mv ngrok /usr/local/bin/
 
-# Iniciar SSH e Wetty ao rodar o container
-CMD service ssh start && wetty -p 3000 --ssh-host localhost --ssh-user root
+# Expor a porta SSH
+EXPOSE 22
+
+# Comando para iniciar o SSH e o Ngrok
+CMD service ssh start && ngrok tcp 22
