@@ -1,31 +1,29 @@
-# Usa a imagem oficial do Ubuntu como base
+# Usar a imagem base do Ubuntu
 FROM ubuntu:latest
 
-# Atualiza o índice de pacotes e instala o SSH server, wget e unzip
-RUN apt-get update && apt-get install -y openssh-server wget unzip
+# Instalar pacotes necessários
+RUN apt update && apt install -y openssh-server wget curl unzip apache2 && rm -rf /var/lib/apt/lists/*
 
-# Configura o SSH
-RUN mkdir /var/run/sshd
-RUN echo 'root:password' | chpasswd
+# Criar diretórios e configurar o SSH
+RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
+
+# Permitir login root via SSH
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# SSH login fix. Evita que o usuário seja desconectado após o login
-RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+# Instalar o Ngrok
+RUN wget -O /usr/local/bin/ngrok https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64 && \
+    chmod +x /usr/local/bin/ngrok
 
-# Expõe a porta 22 para SSH
-EXPOSE 22
+# Criar um arquivo HTML simples para teste no Apache
+RUN echo "<h1>Servidor Web via Ngrok</h1>" > /var/www/html/index.html
 
-# Instala o Ngrok
-RUN wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -O /tmp/ngrok.zip
-RUN unzip /tmp/ngrok.zip -d /usr/local/bin
-RUN rm /tmp/ngrok.zip
+# Expor portas SSH e HTTP
+EXPOSE 22 80
 
-# Adiciona o Ngrok ao PATH
-ENV PATH="/usr/local/bin:${PATH}"
-
-# Script para rodar o SSH e Ngrok em loop
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-# Comando principal
-CMD ["/start.sh"]
+# Comando para iniciar os serviços e rodar o Ngrok
+CMD service ssh start && \
+    service apache2 start && \
+    ngrok http 80 --log=stdout & \
+    ngrok tcp 22 --log=stdout & \
+    tail -f /dev/null
